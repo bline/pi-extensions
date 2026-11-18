@@ -73,7 +73,9 @@ export class UsageView implements Component {
     const height = Math.max(1, this.tui.terminal?.rows ?? 24);
     // Overlays are composited over the chat without clearing it. Fill the whole
     // screen, with no border, so the terminal's own row selection copies only usage text.
-    const lines = this.renderContent(width, height);
+    // One column of left padding, matching Pi's chat messages.
+    const pad = width > 1 ? " " : "";
+    const lines = this.renderContent(width - pad.length, height).map((line) => pad + line);
     const footer = lines.length > 1 ? lines.splice(-1) : [];
     while (lines.length + footer.length < height) lines.push("");
     return [...lines, ...footer].map((line) => line + " ".repeat(Math.max(0, width - visibleWidth(line))));

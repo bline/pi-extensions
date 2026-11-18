@@ -114,6 +114,8 @@ test("overlay viewport stays bounded, scrolls to later providers and resizes", a
   assert.match(lines.at(-1)!, /r refresh/);
   assert.doesNotMatch(lines.join("\n"), /[│╭╮╰╯]/, "no border to pollute terminal selection");
   assert.ok(lines.every((line) => visibleWidth(line) === 70), "every row covers the overlay width");
+  assert.ok(lines.every((line) => line.startsWith(" ")), "one column of left padding like the chat");
+  assert.match(lines[0]!, /^ Account usage/);
   assert.doesNotMatch(lines.join("\n"), /Second provider/);
   for (let i = 0; i < 12; i++) view.handleInput("down");
   lines = view.render(70);
