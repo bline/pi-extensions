@@ -24,7 +24,7 @@ for (const Renderer of [TuiMainScreen, TuiAltScreen]) {
     try {
       tui.addChild(new Text("Underlying conversation"));
       tui.start();
-      tui.showOverlay(view, { width: "90%", maxHeight: "85%" });
+      tui.showOverlay(view, { width: "100%", maxHeight: "100%" });
       await delay(30);
       assert.match(output, /Account usage/);
       assert.match(output, /80% left/);

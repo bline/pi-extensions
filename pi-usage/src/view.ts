@@ -69,17 +69,14 @@ export class UsageView implements Component {
   render(width: number): string[] {
     // Pi 1.4 overlays call render() directly in BOTH screen modes, bypassing the
     // layout engine. Supply the viewport to ScrollView and clip here so neither
-    // the footer nor later providers disappear below the overlay's maxHeight.
-    const outer = Math.max(1, Math.floor((this.tui.terminal?.rows ?? 24) * 0.85));
-    // Overlays are composited over the chat without clearing it, so frame the
-    // panel and pad every row to full width; skip the frame when there's no room.
-    const framed = width >= 8 && outer >= 6;
-    const lines = this.renderContent(framed ? width - 4 : width, framed ? outer - 2 : outer);
-    if (!framed) return lines;
-    const inner = width - 2;
-    const border = (text: string) => this.theme.fg("border", text);
-    const row = (line: string) => border("│") + " " + line + " ".repeat(Math.max(0, inner - 2 - visibleWidth(line))) + " " + border("│");
-    return [border(`╭${"─".repeat(inner)}╮`), ...lines.map(row), border(`╰${"─".repeat(inner)}╯`)];
+    // the footer nor later providers disappear below the overlay.
+    const height = Math.max(1, this.tui.terminal?.rows ?? 24);
+    // Overlays are composited over the chat without clearing it. Fill the whole
+    // screen, with no border, so the terminal's own row selection copies only usage text.
+    const lines = this.renderContent(width, height);
+    const footer = lines.length > 1 ? lines.splice(-1) : [];
+    while (lines.length + footer.length < height) lines.push("");
+    return [...lines, ...footer].map((line) => line + " ".repeat(Math.max(0, width - visibleWidth(line))));
   }
 
   private renderContent(width: number, height: number): string[] {
