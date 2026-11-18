@@ -3,6 +3,32 @@ import { Key, matchesKey, ScrollView, Text, truncateToWidth, visibleWidth, type 
 import { formatUsage } from "./format.ts";
 import type { UsageResult } from "./types.ts";
 
+type CompositeLineAt = (base: string, overlay: string, col: number, overlayWidth: number, totalWidth: number) => string;
+
+/**
+ * pi-tui keeps a chat row that anchors an image instead of drawing an overlay on
+ * it, then places the image over the overlay. While the usage view is open, treat
+ * rows under a full-width overlay as blank, so their images are removed and not
+ * drawn again. This relies on pi-tui's private compositeLineAt and does nothing if
+ * that method is missing.
+ */
+function hideImagesUnderFullWidthOverlays(tui: object): () => void {
+  const target = tui as { compositeLineAt?: CompositeLineAt; requestRender?: (force?: boolean) => void };
+  const original = target.compositeLineAt;
+  if (typeof original !== "function") return () => {};
+  const hadOwn = Object.hasOwn(tui, "compositeLineAt");
+  const patched: CompositeLineAt = (base, overlay, col, overlayWidth, totalWidth) =>
+    original.call(tui, col === 0 && overlayWidth >= totalWidth ? "" : base, overlay, col, overlayWidth, totalWidth);
+  target.compositeLineAt = patched;
+  return () => {
+    if (target.compositeLineAt === patched) {
+      if (hadOwn) target.compositeLineAt = original;
+      else delete target.compositeLineAt;
+    }
+    target.requestRender?.(true);
+  };
+}
+
 /** Built from Pi's layout, wrapping, scroll and input components, not another TUI. */
 export class UsageView implements Component {
   private readonly heading: Text;
@@ -27,8 +53,11 @@ export class UsageView implements Component {
     this.heading = heading;
     this.body = body;
     this.scroll = scroll;
+    this.restoreImages = hideImagesUnderFullWidthOverlays(tui);
     this.refresh();
   }
+
+  private readonly restoreImages: () => void;
 
   refresh(): void {
     if (this.disposed || this.request) return;
@@ -128,5 +157,6 @@ export class UsageView implements Component {
     if (this.disposed) return;
     this.disposed = true;
     this.request?.abort();
+    this.restoreImages();
   }
 }
